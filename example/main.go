@@ -7,45 +7,55 @@ import (
 )
 
 type Job struct {
-	Num int
+	ID int
 }
 
-type handler struct{}
+type Result struct {
+	ID      int
+	Message string
+}
 
-func (h *handler) Process(job any) (any, error) {
-	j, ok := job.(Job)
-	if !ok {
-		return nil, fmt.Errorf("invalid job type")
+// JobHandler 구현
+type Handler struct{}
+
+func (h *Handler) Process(job Job) (Result, error) {
+	// 실제 작업 로직 작성
+	return Result{ID: job.ID, Message: "Success"}, nil
+}
+
+// JobProducer 구현
+type Producer struct {
+	count int
+	max   int
+}
+
+func (p *Producer) Next() (Job, bool, error) {
+	if p.count >= p.max {
+		return Job{}, false, nil
 	}
-	fmt.Println("process->", j.Num)
-	return j.Num, nil
+	p.count++
+	return Job{ID: p.count}, true, nil
 }
 
-type producer struct {
-	cnt int
-}
-
-func (p *producer) Next() (any, error) {
-	p.cnt++
-	if p.cnt > 10 {
-		return nil, nil
-	}
-	return Job{Num: p.cnt}, nil
-}
-
-func (p *producer) Close() error {
+func (p *Producer) Close() error {
 	return nil
 }
 
 func main() {
-	wp := workerpool.NewWorkerPool(3, &handler{})
-	results := wp.Run(&producer{})
+	handler := &Handler{}
+	producer := &Producer{max: 10}
+
+	// 워커 5개로 풀 생성
+	pool := workerpool.NewWorkerPool[Job, Result](3, handler)
+
+	// 실행 및 결과 수신
+	results := pool.Run(producer)
 
 	for r := range results {
 		if r.Err != nil {
-			fmt.Println("error->", r.Value.(int), r.Err)
+			fmt.Printf("Error: %v\n", r.Err)
 			continue
 		}
-		fmt.Println("done->", r.Value.(int))
+		fmt.Printf("Result: %v\n", r.Value)
 	}
 }
