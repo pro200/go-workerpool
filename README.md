@@ -23,10 +23,13 @@ go get github.com/pro200/go-workerpool
 ```go
 type MyHandler struct{}
 
-func (h *MyHandler) Process(job any) error {
-    // 실제 처리 로직을 여기에 작성하세요
-    fmt.Printf("Processing: %v\n", job)
-    return nil
+func (h *handler) Process(job any) (any, error) {
+    j, ok := job.(Job)
+    if !ok {
+        return nil, fmt.Errorf("invalid job type")
+    }
+    fmt.Println("process->", j.Num)
+    return j.Num, nil
 }
 ```
 
@@ -78,7 +81,7 @@ func main() {
 
 ### `JobProducer`
 작업 데이터의 공급을 담당합니다.
-- `Next() (any, error)`: 다음 작업을 반환합니다. 첫 번째 반환값이 `nil`이면 모든 작업이 끝난 것으로 간주합니다. 
+- `Next() (result any, err error)`: 다음 작업을 반환합니다. 첫 번째 반환값이 `nil`이면 모든 작업이 끝난 것으로 간주합니다. 
 - `Close() error`: 데이터 공급이 끝난 후 리소스를 정리합니다. 
 
 ### `Result`

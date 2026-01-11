@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/pro200/go-workerpool"
 )
@@ -13,15 +12,13 @@ type Job struct {
 
 type handler struct{}
 
-func (h *handler) Process(job any) error {
-	time.Sleep(time.Millisecond * 300)
-
+func (h *handler) Process(job any) (any, error) {
 	j, ok := job.(Job)
 	if !ok {
-		return fmt.Errorf("invalid job type")
+		return nil, fmt.Errorf("invalid job type")
 	}
-	fmt.Println("num->", j.Num)
-	return nil
+	fmt.Println("process->", j.Num)
+	return j.Num, nil
 }
 
 type producer struct {
@@ -45,6 +42,10 @@ func main() {
 	results := wp.Run(&producer{})
 
 	for r := range results {
-		fmt.Println("num:", r.Job.(Job).Num, "err:", r.Err)
+		if r.Err != nil {
+			fmt.Println("error->", r.Value.(int), r.Err)
+			continue
+		}
+		fmt.Println("done->", r.Value.(int))
 	}
 }

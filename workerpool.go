@@ -5,17 +5,17 @@ import (
 )
 
 type JobHandler interface {
-	Process(job any) error
+	Process(job any) (result any, err error)
 }
 
 type JobProducer interface {
-	Next() (any, error) // job이 nil일경우 더이상 job이 없음
+	Next() (job any, err error) // job이 nil일경우 더이상 job이 없음
 	Close() error
 }
 
 type Result struct {
-	Job any
-	Err error
+	Value any
+	Err   error
 }
 
 type WorkerPool struct {
@@ -55,8 +55,8 @@ func (p *WorkerPool) startWorkers() {
 func (p *WorkerPool) worker() {
 	defer p.wg.Done()
 	for job := range p.jobs {
-		err := p.handler.Process(job)
-		p.results <- Result{Job: job, Err: err}
+		result, err := p.handler.Process(job)
+		p.results <- Result{Value: result, Err: err}
 	}
 }
 
@@ -67,7 +67,7 @@ func (p *WorkerPool) produceJobs(producer JobProducer) {
 			break
 		}
 		if err != nil {
-			p.results <- Result{Job: job, Err: err}
+			p.results <- Result{Err: err}
 			break
 		}
 		// backpressure 발생 지점
