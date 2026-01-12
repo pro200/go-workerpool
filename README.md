@@ -11,7 +11,7 @@ Go의 제네릭(Generics)을 활용하여 구현된 간단하고 효율적인 �
 ## 설치
 
 ```bash
-go mod init go-workerpool
+go get github.com/pro200/go-workerpool
 ```
 
 ## 사용 방법
