@@ -5,23 +5,18 @@ import (
 )
 
 type JobHandler[J any, R any] interface {
-	Process(job J) (result R, err error)
+	Process(job J) (result R)
 }
 
 type JobProducer[J any] interface {
-	Next() (job J, ok bool, err error) // ok가 false일 경우 더이상 job이 없음
+	Next() (job J, ok bool) // ok가 false일 경우 더이상 job이 없음
 	Close() error
-}
-
-type Result[R any] struct {
-	Value R
-	Err   error
 }
 
 type WorkerPool[J any, R any] struct {
 	maxWorkers int
 	jobs       chan J
-	results    chan Result[R]
+	results    chan R
 	wg         sync.WaitGroup
 	handler    JobHandler[J, R]
 }
@@ -30,12 +25,12 @@ func NewWorkerPool[J any, R any](maxWorkers int, handler JobHandler[J, R]) *Work
 	return &WorkerPool[J, R]{
 		maxWorkers: maxWorkers,
 		jobs:       make(chan J, maxWorkers),
-		results:    make(chan Result[R]),
+		results:    make(chan R),
 		handler:    handler,
 	}
 }
 
-func (p *WorkerPool[J, R]) Run(producer JobProducer[J]) <-chan Result[R] {
+func (p *WorkerPool[J, R]) Run(producer JobProducer[J]) <-chan R {
 	go func() {
 		p.startWorkers()
 		p.produceJobs(producer)
@@ -54,24 +49,18 @@ func (p *WorkerPool[J, R]) startWorkers() {
 func (p *WorkerPool[J, R]) worker() {
 	defer p.wg.Done()
 	for job := range p.jobs {
-		result, err := p.handler.Process(job)
-		p.results <- Result[R]{Value: result, Err: err}
+		p.results <- p.handler.Process(job)
 	}
 }
 
 func (p *WorkerPool[J, R]) produceJobs(producer JobProducer[J]) {
 	defer producer.Close()
 	for {
-		job, ok, err := producer.Next()
+		job, ok := producer.Next()
 		if !ok {
 			break
 		}
-		if err != nil {
-			var zero R
-			p.results <- Result[R]{Value: zero, Err: err}
-			break
-		}
-		// backpressure 발생 지점
+
 		// worker가 처리 끝날 때까지 자동 대기
 		p.jobs <- job
 	}

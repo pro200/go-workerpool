@@ -13,14 +13,15 @@ type Job struct {
 type Result struct {
 	ID      int
 	Message string
+	Err     error
 }
 
 // JobHandler 구현
 type Handler struct{}
 
-func (h *Handler) Process(job Job) (Result, error) {
+func (h *Handler) Process(job Job) Result {
 	// 실제 작업 로직 작성
-	return Result{ID: job.ID, Message: "Success"}, nil
+	return Result{ID: job.ID, Message: "Success"}
 }
 
 // JobProducer 구현
@@ -29,12 +30,12 @@ type Producer struct {
 	max   int
 }
 
-func (p *Producer) Next() (Job, bool, error) {
+func (p *Producer) Next() (Job, bool) {
 	if p.count >= p.max {
-		return Job{}, false, nil
+		return Job{}, false
 	}
 	p.count++
-	return Job{ID: p.count}, true, nil
+	return Job{ID: p.count}, true
 }
 
 func (p *Producer) Close() error {
@@ -56,6 +57,6 @@ func main() {
 			fmt.Printf("Error: %v\n", r.Err)
 			continue
 		}
-		fmt.Printf("Result: %v\n", r.Value)
+		fmt.Printf("Result: %v\n", r)
 	}
 }
