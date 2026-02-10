@@ -47,7 +47,7 @@ func main() {
 	producer := &Producer{max: 10}
 
 	// 워커 5개로 풀 생성
-	pool := workerpool.NewWorkerPool[Job, Result](3, handler)
+	pool := workerpool.New[Job, Result](3, handler)
 
 	// 실행 및 결과 수신
 	results := pool.Run(producer)

@@ -21,7 +21,7 @@ type WorkerPool[J any, R any] struct {
 	handler    JobHandler[J, R]
 }
 
-func NewWorkerPool[J any, R any](maxWorkers int, handler JobHandler[J, R]) *WorkerPool[J, R] {
+func New[J any, R any](maxWorkers int, handler JobHandler[J, R]) *WorkerPool[J, R] {
 	return &WorkerPool[J, R]{
 		maxWorkers: maxWorkers,
 		jobs:       make(chan J, maxWorkers),
